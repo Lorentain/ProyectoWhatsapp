@@ -34,8 +34,6 @@ app.post('/upload', function(req, res) {
     sampleFile.mv(uploadPath, function(err) {
       if (err)
         return res.status(500).send(err);
-  
-      res.send('File uploaded!');
     });
     
   });
