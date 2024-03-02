@@ -23,7 +23,7 @@ var server = http.createServer(app);
 
 const io = new Server({
   cors: {
-    origin: "*",
+    origin: "https://proyectowhatsapp.onrender.com/",
     methods: ["GET", "POST"]
   }
 });
