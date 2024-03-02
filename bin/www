@@ -20,30 +20,72 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
+
 const io = new Server({
   cors: {
-    origin: "*"
+    origin: "*",
+    methods: ["GET", "POST"]
   }
 });
 
 io.listen(4000);
 
+let usuariosConectados = [];
+let avatarEstado = [{}];
+
 io.on('connection', (socket) => {
   console.log('Usuario conectado');
 
   socket.on('disconnect', () => {
-    console.log("Usuario desconectado")
+    for(let i = 0; i < usuariosConectados.length;i++) {
+      if(usuariosConectados[i] === socket.usuario) {
+        usuariosConectados.splice(i,1);
+        io.emit('listaUsuarios', usuariosConectados);
+      }
+    }
   });
 
   socket.on('nick',(msg) => {
-    socket.nick = msg;
-    console.log("Usuario conectado:" + msg)
-    socket.broadcast.emit('entradaUsuario',msg + " ha entrado al chat")
+    socket.usuario = msg;
+    socket.join(msg);
+    if (!usuariosConectados.includes(msg)) {
+      usuariosConectados.push(msg);
+    }
+    console.log("Usuario conectado: " + msg)
+    io.emit('listaUsuarios', usuariosConectados);
+    console.log("Usuarios conectados:", usuariosConectados);
   })
+
+  socket.on('desconectarUsuario', (usuario) => {
+    for(let i = 0; i < usuariosConectados.length;i++) {
+      if(usuariosConectados[i] === usuario) {
+        usuariosConectados.splice(i,1);
+        io.emit('listaUsuarios', usuariosConectados);
+      }
+    }
+  }) 
 
   socket.on('mensaje',(mensaje) => {
     console.log(mensaje);
     socket.broadcast.emit('mensajeRecibido',mensaje);
+  })
+
+  socket.on('enviarChatPrivado',(datosUsuarios) => {
+    io.emit('obtenerUsuarios',datosUsuarios);
+  })
+
+  socket.on('mensajePrivado', (mensaje) => {
+    console.log(mensaje,"Servidor");
+    io.to(mensaje.usuario).emit('mensajePrivadoRecibido', mensaje);
+  });
+
+  socket.on('enviarAvatarEstado', (datos) => { // avatar y estado
+    avatarEstado = datos;
+    console.log(avatarEstado);
+  })
+
+  socket.on('recogerAvatarEstado', () => {
+    io.emit('AvatarEstado',avatarEstado);
   })
 
 });
